@@ -1,0 +1,10 @@
+body {
+  margin: 0;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: linear-gradient(180deg, #f0f9ff 0%, #fdf2f8 60%, #fefce8 100%);
+  color: #1f2937;
+}
+
+#root {
+  min-height: 100svh;
+}
