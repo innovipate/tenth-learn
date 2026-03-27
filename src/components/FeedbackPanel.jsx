@@ -17,7 +17,10 @@ function FeedbackPanel({ feedback }) {
       </p>
       {feedback.misconception && (
         <p>
-          <strong>Likely misconception:</strong> {feedback.misconception.feedback}
+          <strong>Likely misconception:</strong>{' '}
+          {typeof feedback.misconception === 'string'
+            ? feedback.misconception.replaceAll('_', ' ')
+            : feedback.misconception.feedback}
         </p>
       )}
       <p>

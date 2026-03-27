@@ -115,7 +115,10 @@ function App() {
 
     setProgress((prev) => {
       const current = prev || createInitialProgress(chapterData, difficulty)
-      const misconceptionTag = evaluation.misconception?.tag || 'none'
+      const misconceptionTag =
+        typeof evaluation.misconception === 'string'
+          ? evaluation.misconception
+          : evaluation.misconception?.tag || 'none'
       const newAttempt = {
         questionId: currentPracticeQuestion.id,
         subtopicId: currentPracticeQuestion.subtopicId,
