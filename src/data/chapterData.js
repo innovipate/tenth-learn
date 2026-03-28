@@ -110,6 +110,7 @@ const chapterData = {
   ],
   practiceQuestions: [
     {
+      type: 'short_answer',
       id: 'p1',
       subtopicId: 'what-is-chemical-reaction',
       prompt: 'Why is digestion called a chemical reaction?',
@@ -117,8 +118,11 @@ const chapterData = {
       answerKey: ['food changes', 'new substances', 'chemical change'],
       misconceptionTags: ['definition_confusion', 'new_substance_confusion', 'incomplete_reasoning'],
       retryPrompt: 'Why is respiration a chemical reaction? Explain using change into new substances.',
+      idealAnswer:
+        'Digestion is a **chemical change** because food breaks down into **new substances** that are different from the original food.',
     },
     {
+      type: 'short_answer',
       id: 'p2',
       subtopicId: 'what-is-chemical-reaction',
       prompt: 'Why is rusting of iron a chemical reaction?',
@@ -126,8 +130,11 @@ const chapterData = {
       answerKey: ['new substance', 'iron oxide', 'identity changes'],
       misconceptionTags: ['definition_confusion', 'physical_vs_chemical_change'],
       retryPrompt: 'Explain why souring of milk is a chemical reaction.',
+      idealAnswer:
+        'Rusting is a chemical reaction because **iron changes into a new substance** (**iron oxide**) with different properties.',
     },
     {
+      type: 'short_answer',
       id: 'p3',
       subtopicId: 'signs-of-reaction',
       prompt:
@@ -136,8 +143,11 @@ const chapterData = {
       answerKey: ['white flame', 'white powder', 'magnesium oxide', 'new substance'],
       misconceptionTags: ['observation_confusion', 'incomplete_reasoning'],
       retryPrompt: 'Give two clear observations that show a gas-evolving reaction occurred in a lab.',
+      idealAnswer:
+        'We see a **dazzling white flame** and a **white powder** (**magnesium oxide**)—a **new substance** formed from magnesium and air.',
     },
     {
+      type: 'short_answer',
       id: 'p4',
       subtopicId: 'signs-of-reaction',
       prompt: 'Why does gas evolution indicate a chemical reaction?',
@@ -145,8 +155,11 @@ const chapterData = {
       answerKey: ['new substance', 'gas formed', 'product formed'],
       misconceptionTags: ['cause_effect_confusion', 'definition_confusion'],
       retryPrompt: 'How does temperature rise in a test tube suggest a reaction happened?',
+      idealAnswer:
+        'Bubbles mean a **new gaseous product** is formed; a **new substance** appearing shows a **chemical reaction**.',
     },
     {
+      type: 'short_answer',
       id: 'p5',
       subtopicId: 'reactants-and-products',
       prompt: 'What are reactants in a chemical reaction?',
@@ -154,8 +167,11 @@ const chapterData = {
       answerKey: ['take part', 'starting substances', 'undergo change'],
       misconceptionTags: ['definition_confusion'],
       retryPrompt: 'Define products in your own words and where they appear in equation.',
+      idealAnswer:
+        '**Reactants** are the **starting substances** that **take part** in the reaction and undergo chemical change.',
     },
     {
+      type: 'short_answer',
       id: 'p6',
       subtopicId: 'reactants-and-products',
       prompt: 'In zinc + acid -> hydrogen + salt, name one product.',
@@ -163,8 +179,11 @@ const chapterData = {
       answerKey: ['hydrogen', 'salt'],
       misconceptionTags: ['reactant_product_confusion'],
       retryPrompt: 'In magnesium + oxygen -> magnesium oxide, which are reactants?',
+      idealAnswer:
+        'One product is **hydrogen** (or the **salt**); **products** are written on the **right-hand side** of the arrow.',
     },
     {
+      type: 'short_answer',
       id: 'p7',
       subtopicId: 'word-equation',
       prompt: 'What is the use of a word equation?',
@@ -172,8 +191,11 @@ const chapterData = {
       answerKey: ['simple words', 'shows reactants and products', 'easy to understand'],
       misconceptionTags: ['definition_confusion', 'incomplete_reasoning'],
       retryPrompt: 'Why might teachers use word equations before chemical equations?',
+      idealAnswer:
+        'A word equation uses **simple names** to show **reactants and products** clearly, so it is **easy to understand** before using symbols.',
     },
     {
+      type: 'short_answer',
       id: 'p8',
       subtopicId: 'word-equation',
       prompt: 'What does the arrow in a word equation show?',
@@ -181,8 +203,11 @@ const chapterData = {
       answerKey: ['direction', 'reactants to products'],
       misconceptionTags: ['symbol_confusion'],
       retryPrompt: 'What does the plus sign mean in a word equation?',
+      idealAnswer:
+        'The arrow shows the **direction of the reaction**: **reactants change into products** (it is not an “equals” sign).',
     },
     {
+      type: 'short_answer',
       id: 'p9',
       subtopicId: 'chemical-equation',
       prompt: 'Why is a chemical equation shorter than a word equation?',
@@ -190,8 +215,11 @@ const chapterData = {
       answerKey: ['uses symbols', 'uses formulae', 'concise'],
       misconceptionTags: ['symbol_confusion', 'incomplete_reasoning'],
       retryPrompt: 'Write one reason chemical equations are more useful in science writing.',
+      idealAnswer:
+        'It uses **symbols and formulae** instead of full names, so the same reaction looks **shorter and clearer**.',
     },
     {
+      type: 'short_answer',
       id: 'p10',
       subtopicId: 'chemical-equation',
       prompt: 'What does O2 mean in Mg + O2 -> MgO?',
@@ -199,8 +227,11 @@ const chapterData = {
       answerKey: ['oxygen molecule', 'two oxygen atoms'],
       misconceptionTags: ['formula_confusion', 'atom_molecule_confusion'],
       retryPrompt: 'In CO2, what does the 2 indicate?',
+      idealAnswer:
+        '**O₂** is an **oxygen molecule** made of **two oxygen atoms** bonded together.',
     },
     {
+      type: 'short_answer',
       id: 'p11',
       subtopicId: 'balanced-unbalanced',
       prompt: 'What do we compare to check whether an equation is balanced?',
@@ -208,8 +239,11 @@ const chapterData = {
       answerKey: ['number of atoms', 'each element', 'both sides'],
       misconceptionTags: ['balancing_confusion', 'incomplete_reasoning'],
       retryPrompt: 'How do you verify if hydrogen atoms are balanced in an equation?',
+      idealAnswer:
+        'We compare the **number of atoms of each element** on the **left and right** sides of the arrow.',
     },
     {
+      type: 'short_answer',
       id: 'p12',
       subtopicId: 'balanced-unbalanced',
       prompt: 'What is a skeletal chemical equation?',
@@ -217,6 +251,32 @@ const chapterData = {
       answerKey: ['unbalanced equation', 'before balancing'],
       misconceptionTags: ['definition_confusion', 'balancing_confusion'],
       retryPrompt: 'Why do we call an equation skeletal before balancing it?',
+      idealAnswer:
+        'A **skeletal equation** is the **unbalanced** equation written **before** atom counts are made equal on both sides.',
+    },
+    {
+      type: 'short_answer',
+      id: 'p13',
+      subtopicId: 'chemical-equation',
+      prompt: 'Why is Na⁺ called a cation?',
+      answerKey: ['lost electron', 'positive charge'],
+      misconceptionTags: ['sign_error'],
+      hint: 'Check whether electrons are lost or gained.',
+      idealAnswer:
+        '**Na⁺** is a **cation** because it has **lost one electron** and carries a **positive charge**.',
+      retryPrompt: 'Name one other cation you know and say why it is positive.',
+    },
+    {
+      type: 'short_answer',
+      id: 'p14',
+      subtopicId: 'chemical-equation',
+      prompt: 'What is an ion?',
+      answerKey: ['charged particle', 'gains or loses electrons'],
+      misconceptionTags: ['definition_confusion'],
+      hint: 'Think about electrons and charge.',
+      idealAnswer:
+        'An **ion** is an atom or group of atoms that has **gained or lost electrons** and carries a **charge**.',
+      retryPrompt: 'What is the difference between a cation and an anion in one line?',
     },
   ],
 }
