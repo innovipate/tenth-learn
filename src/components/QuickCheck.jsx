@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import CelebrationBurst from './CelebrationBurst'
 
 function QuickCheck({ quickCheck, onSubmit, feedback }) {
   const [answer, setAnswer] = useState('')
@@ -10,29 +9,37 @@ function QuickCheck({ quickCheck, onSubmit, feedback }) {
     onSubmit(answer)
   }
 
+  const points = quickCheck.expectedAnswerPoints || quickCheck.answerKey || []
+
   return (
     <form className="card" onSubmit={submit}>
-      {feedback?.correct && <CelebrationBurst />}
       <h3>Quick check</h3>
       <p>{quickCheck.question}</p>
       <textarea
         className="input"
         rows={3}
-        placeholder="Type your answer in your own words..."
+        placeholder="One or two short sentences..."
         value={answer}
         onChange={(event) => setAnswer(event.target.value)}
       />
       <div className="row">
-        <button type="button" className="btn muted" onClick={() => setShowHint((prev) => !prev)}>
-          {showHint ? 'Hide Hint' : 'Show Hint'}
-        </button>
+        {quickCheck.hint && (
+          <button type="button" className="btn muted" onClick={() => setShowHint((h) => !h)}>
+            {showHint ? 'Hide Hint' : 'Hint'}
+          </button>
+        )}
         <button type="submit" className="btn primary">
           Check
         </button>
       </div>
-      {showHint && <p className="hint">{quickCheck.hint}</p>}
+      {showHint && quickCheck.hint && <p className="hint">{quickCheck.hint}</p>}
       {feedback?.message && (
-        <p className={`feedback ${feedback.correct ? 'good' : 'neutral'}`}>{feedback.message}</p>
+        <p className={`feedback ${feedback.level === 'correct' ? 'good' : feedback.level === 'partially_correct' ? 'neutral' : 'improve'}`}>
+          {feedback.message}
+        </p>
+      )}
+      {feedback && points.length > 0 && !feedback.correct && (
+        <p className="small muted-hint">Ideas to aim for: {points.slice(0, 3).join(', ')}</p>
       )}
     </form>
   )

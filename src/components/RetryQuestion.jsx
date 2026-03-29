@@ -1,11 +1,10 @@
 function RetryQuestion({ retryQuestion }) {
-  if (!retryQuestion) return null
-
+  if (!retryQuestion?.prompt) return null
   return (
-    <section className="card retry">
-      <h3>Try a Similar Question</h3>
+    <section className="card retry-card">
+      <h4>Similar question</h4>
       <p>{retryQuestion.prompt}</p>
-      <p className="small">Write this in your notebook first, then return and continue.</p>
+      <p className="small">Try in your notebook, then continue.</p>
     </section>
   )
 }

@@ -1,30 +1,39 @@
-import CelebrationBurst from './CelebrationBurst'
+function resultLabel(level, correct) {
+  if (level === 'blank') return 'Blank'
+  if (correct || level === 'correct') return 'Correct'
+  if (level === 'partially_correct') return 'Partially correct'
+  return 'Incorrect'
+}
 
 function FeedbackPanel({ feedback }) {
+  const level = feedback.level || (feedback.correct ? 'correct' : 'incorrect')
+  const tone =
+    level === 'correct' || feedback.correct
+      ? 'good'
+      : level === 'partially_correct'
+        ? 'neutral'
+        : 'improve'
+
   return (
-    <section className="card">
-      {feedback.correct && <CelebrationBurst />}
+    <section className="card feedback-panel">
       <h3>Feedback</h3>
-      <p className={`feedback ${feedback.correct ? 'good' : 'improve'}`}>{feedback.supportiveMessage}</p>
-      {!feedback.correct && (
-        <p className="encourage">Great try. You are learning step by step. Let us improve one idea and retry.</p>
+      <p className={`feedback ${tone}`}>{feedback.supportiveMessage}</p>
+      {level !== 'correct' && !feedback.correct && (
+        <p className="encourage">Good try. Small steps make strong memory.</p>
       )}
       <p>
-        <strong>Result:</strong> {feedback.correct ? 'Correct' : 'Not yet'}
+        <strong>Result:</strong> {resultLabel(level, feedback.correct)}
       </p>
       <p>
-        <strong>Reasoning check:</strong> {feedback.breakPoint}
+        <strong>Next step:</strong> {feedback.breakPoint}
       </p>
       {feedback.misconception && (
-        <p>
-          <strong>Likely misconception:</strong>{' '}
-          {typeof feedback.misconception === 'string'
-            ? feedback.misconception.replaceAll('_', ' ')
-            : feedback.misconception.feedback}
+        <p className="small">
+          <strong>Watch:</strong> {String(feedback.misconception).replaceAll('_', ' ')}
         </p>
       )}
-      <p>
-        <strong>Thinking coverage:</strong> {Math.round(feedback.scoreRatio * 100)}%
+      <p className="small">
+        <strong>Match:</strong> {Math.round((feedback.scoreRatio || 0) * 100)}%
       </p>
     </section>
   )

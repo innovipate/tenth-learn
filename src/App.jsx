@@ -1,275 +1,277 @@
 import { useEffect, useMemo, useState } from 'react'
-import ChapterHeader from './components/ChapterHeader'
-import SubtopicCard from './components/SubtopicCard'
+import MainNav from './components/MainNav'
+import ConceptLesson from './components/ConceptLesson'
 import QuickCheck from './components/QuickCheck'
 import PracticeQuestion from './components/PracticeQuestion'
 import FeedbackPanel from './components/FeedbackPanel'
 import RetryQuestion from './components/RetryQuestion'
-import MasteryDashboard from './components/MasteryDashboard'
-import chapterData from './data/chapterData'
+import MemoryDrill from './components/MemoryDrill'
+import RecallCard from './components/RecallCard'
+import WeakAreaDashboard from './components/WeakAreaDashboard'
+import RevisionMode from './components/RevisionMode'
+import { allConceptsInOrder, flattenPracticeQuestions } from './data/index'
+import memoryData from './data/memoryData'
 import { evaluateShortAnswer, getRetryQuestion } from './utils/evaluation'
 import {
-  createInitialProgress,
-  getMasteryFromProgress,
+  defaultProgress,
   loadProgress,
+  markConceptComplete,
+  progressSummary,
+  recordPracticeAttempt,
   saveProgress,
 } from './utils/progress'
 import './App.css'
 
+const practiceAll = flattenPracticeQuestions(allConceptsInOrder)
+
 function App() {
-  const [view, setView] = useState('home')
-  const [difficulty, setDifficulty] = useState('medium')
-  const [subtopicIndex, setSubtopicIndex] = useState(0)
+  const [screen, setScreen] = useState('home')
+  const [mode, setMode] = useState('understand')
+  const [progress, setProgress] = useState(() => loadProgress() || defaultProgress())
+  const [conceptIndex, setConceptIndex] = useState(0)
   const [practiceIndex, setPracticeIndex] = useState(0)
-  const [practiceMode, setPracticeMode] = useState('all')
-  const [progress, setProgress] = useState(
-    () => loadProgress(chapterData.id) || createInitialProgress(chapterData, difficulty),
-  )
+  const [practiceWeakOnly, setPracticeWeakOnly] = useState(false)
+  const [quickFeedback, setQuickFeedback] = useState(null)
   const [practiceFeedback, setPracticeFeedback] = useState(null)
-  const [quickCheckFeedback, setQuickCheckFeedback] = useState(null)
 
-  const activeSubtopic = chapterData.subtopics[subtopicIndex]
+  const concept = allConceptsInOrder[conceptIndex] || allConceptsInOrder[0]
 
-  const practiceQuestions = useMemo(() => {
-    if (practiceMode === 'mistakes') {
-      const attemptedWrong = new Set(
-        progress.practiceAttempts.filter((item) => !item.correct).map((item) => item.questionId),
-      )
-      return chapterData.practiceQuestions.filter((question) => attemptedWrong.has(question.id))
-    }
-    return chapterData.practiceQuestions
-  }, [practiceMode, progress?.practiceAttempts])
+  const practiceQueue = useMemo(() => {
+    if (!practiceWeakOnly) return practiceAll
+    const weak = new Set(progress.weakConceptIds || [])
+    return practiceAll.filter((q) => weak.has(q.conceptId))
+  }, [practiceWeakOnly, progress.weakConceptIds])
 
-  const currentPracticeQuestion = practiceQuestions[practiceIndex]
+  const currentQuestion = practiceQueue[practiceIndex]
 
   useEffect(() => {
-    saveProgress(chapterData.id, progress)
+    saveProgress(progress)
   }, [progress])
 
-  const startLearning = () => {
-    setProgress((prev) => prev || createInitialProgress(chapterData, difficulty))
-    setView('learn')
+  const summary = progressSummary(allConceptsInOrder, progress)
+
+  const goLearn = (nextMode) => {
+    const m = nextMode || progress.lastMode || 'understand'
+    setMode(m)
+    setScreen('learn')
+    setProgress((p) => ({ ...p, lastMode: m }))
   }
 
-  const handleQuickCheckSubmit = (answerText) => {
-    const evaluation = evaluateShortAnswer(
-      answerText,
-      activeSubtopic.quickCheck.answerKey || activeSubtopic.quickCheck.expectedKeywords,
-      activeSubtopic.quickCheck.misconceptions || activeSubtopic.quickCheck.misconceptionTags,
-      difficulty,
-    )
-
-    const message = evaluation.correct
-      ? 'Nice thinking. Your quick check is on the right track.'
-      : `Almost there. ${evaluation.breakPoint}`
-    setQuickCheckFeedback({
-      message,
-      correct: evaluation.correct,
-      animationId: Date.now(),
-    })
-
-    setProgress((prev) => {
-      const current = prev || createInitialProgress(chapterData, difficulty)
-      const prevItem = current.subtopicProgress[activeSubtopic.id]
-      return {
-        ...current,
-        difficulty,
-        subtopicProgress: {
-          ...current.subtopicProgress,
-          [activeSubtopic.id]: {
-            ...prevItem,
-            quickCheckAttempts: prevItem.quickCheckAttempts + 1,
-            quickCheckCorrect: prevItem.quickCheckCorrect + (evaluation.correct ? 1 : 0),
-          },
-        },
-      }
-    })
+  const handleModeChange = (next) => {
+    setMode(next)
+    setProgress((p) => ({ ...p, lastMode: next }))
+    setQuickFeedback(null)
+    setPracticeFeedback(null)
+    if (next === 'practice') setPracticeIndex(0)
   }
 
-  const handleNextSubtopic = () => {
-    setQuickCheckFeedback(null)
-    if (subtopicIndex < chapterData.subtopics.length - 1) {
-      setSubtopicIndex((prev) => prev + 1)
-      return
+  const handleQuickSubmit = (answerText) => {
+    const points = concept.quickCheck.expectedAnswerPoints || concept.quickCheck.answerKey || []
+    const ev = evaluateShortAnswer(answerText, points, [])
+    setQuickFeedback({
+      message: `${ev.supportiveMessage} ${ev.breakPoint}`,
+      correct: ev.correct,
+      level: ev.level,
+    })
+    if (ev.correct) {
+      setProgress((p) => markConceptComplete(p, concept.id))
     }
-    setView('practice')
   }
 
   const handlePracticeSubmit = ({ answer, thought }) => {
-    if (!currentPracticeQuestion) return
-
-    const evaluation = evaluateShortAnswer(
-      answer,
-      currentPracticeQuestion.answerKey || currentPracticeQuestion.expectedKeywords,
-      currentPracticeQuestion.misconceptions || currentPracticeQuestion.misconceptionTags,
-      difficulty,
-      thought,
+    if (!currentQuestion) return
+    const ev = evaluateShortAnswer(
+      `${answer} ${thought}`,
+      currentQuestion.answerKey || [],
+      currentQuestion.misconceptionTags || [],
     )
     setPracticeFeedback({
-      ...evaluation,
-      animationId: Date.now(),
-      questionId: currentPracticeQuestion.id,
-      subtopicId: currentPracticeQuestion.subtopicId,
-      retryQuestion: getRetryQuestion(currentPracticeQuestion),
+      ...ev,
+      questionId: currentQuestion.id,
+      conceptId: currentQuestion.conceptId,
+      retryQuestion: getRetryQuestion(currentQuestion),
     })
-
-    setProgress((prev) => {
-      const current = prev || createInitialProgress(chapterData, difficulty)
-      const misconceptionTag =
-        typeof evaluation.misconception === 'string'
-          ? evaluation.misconception
-          : evaluation.misconception?.tag || 'none'
-      const newAttempt = {
-        questionId: currentPracticeQuestion.id,
-        subtopicId: currentPracticeQuestion.subtopicId,
-        correct: evaluation.correct,
-        misconceptionTag,
-      }
-      return {
-        ...current,
-        difficulty,
-        practiceAttempts: [...current.practiceAttempts, newAttempt],
-        misconceptionCounts: {
-          ...current.misconceptionCounts,
-          [misconceptionTag]: (current.misconceptionCounts[misconceptionTag] || 0) + 1,
-        },
-      }
-    })
+    setProgress((p) =>
+      recordPracticeAttempt(p, {
+        questionId: currentQuestion.id,
+        conceptId: currentQuestion.conceptId,
+        correct: ev.correct,
+      }),
+    )
   }
 
-  const handlePracticeDraftChange = () => {
-    if (practiceFeedback) {
-      setPracticeFeedback(null)
-    }
-  }
-
-  const moveToNextPractice = () => {
-    setPracticeFeedback(null)
-    if (practiceIndex < practiceQuestions.length - 1) {
-      setPracticeIndex((prev) => prev + 1)
-      return
-    }
-    setView('dashboard')
-  }
-
-  const moveToPreviousPractice = () => {
-    setPracticeFeedback(null)
-    if (practiceIndex > 0) {
-      setPracticeIndex((prev) => prev - 1)
-    }
-  }
-
-  const resetAllProgress = () => {
-    const reset = createInitialProgress(chapterData, difficulty)
-    setProgress(reset)
-    setSubtopicIndex(0)
+  const resetProgress = () => {
+    const fresh = defaultProgress()
+    setProgress(fresh)
+    saveProgress(fresh)
+    setConceptIndex(0)
     setPracticeIndex(0)
+    setQuickFeedback(null)
     setPracticeFeedback(null)
-    setQuickCheckFeedback(null)
-    setPracticeMode('all')
-    setView('home')
+    setPracticeWeakOnly(false)
   }
 
-  const mastery = getMasteryFromProgress(chapterData, progress)
+  const nextConcept = () => {
+    setQuickFeedback(null)
+    if (conceptIndex < allConceptsInOrder.length - 1) {
+      setConceptIndex((i) => i + 1)
+    } else {
+      handleModeChange('practice')
+    }
+  }
+
+  const markDone = () => {
+    setProgress((p) => markConceptComplete(p, concept.id))
+  }
+
+  const memoryRoundDone = () => {
+    setProgress((p) => ({ ...p, memoryRounds: (p.memoryRounds || 0) + 1 }))
+  }
 
   return (
     <div className="app-shell">
-      <ChapterHeader chapter={chapterData} />
-
-      {view === 'home' && (
-        <section className="card">
-          <h2>Chapter Overview</h2>
-          <p>{chapterData.objective}</p>
-          <ul className="learn-list">
-            {chapterData.outcomes.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-
-          <label className="label" htmlFor="difficulty-select">
-            Choose your difficulty
-          </label>
-          <select
-            id="difficulty-select"
-            className="input"
-            value={difficulty}
-            onChange={(event) => setDifficulty(event.target.value)}
-          >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-
-          <div className="row">
-            <button className="btn primary" onClick={startLearning}>
-              Start Learning
-            </button>
-            <button className="btn muted" onClick={resetAllProgress}>
-              Reset Progress
-            </button>
-          </div>
-        </section>
-      )}
-
-      {view === 'learn' && (
-        <section className="stack">
-          <SubtopicCard subtopic={activeSubtopic} />
-          <QuickCheck
-            key={`${activeSubtopic.id}-${quickCheckFeedback?.animationId || 'fresh'}`}
-            quickCheck={activeSubtopic.quickCheck}
-            onSubmit={handleQuickCheckSubmit}
-            feedback={quickCheckFeedback}
-          />
-          <button className="btn primary" onClick={handleNextSubtopic}>
-            {subtopicIndex < chapterData.subtopics.length - 1 ? 'Next Question' : 'Go to Practice'}
+      <header className="app-header card">
+        <h1 className="app-title">Chemistry — Learn Simply</h1>
+        <p className="app-tagline">Understand · Practice · Remember</p>
+        {screen === 'learn' && <MainNav active={mode} onSelect={handleModeChange} />}
+        {screen === 'home' && (
+          <button type="button" className="btn muted btn-small-header" onClick={() => goLearn('understand')}>
+            Open app
           </button>
-        </section>
-      )}
+        )}
+      </header>
 
-      {view === 'practice' && (
-        <section className="stack">
-          <div className="card">
-            <div className="row space-between">
-              <h2>Guided Practice</h2>
-              <button
-                className="btn muted"
-                onClick={() => {
-                  setPracticeIndex(0)
-                  setPracticeFeedback(null)
-                  setPracticeMode((prev) => (prev === 'all' ? 'mistakes' : 'all'))
-                }}
-              >
-                {practiceMode === 'all' ? 'Practice Only Mistakes' : 'Practice All Questions'}
+      {screen === 'home' && (
+        <div className="stack">
+          <section className="card home-progress">
+            <h2>Your progress</h2>
+            <p>
+              Concepts explored: <strong>{summary.conceptsDone}</strong> / {summary.conceptsTotal}
+            </p>
+            <p>
+              Weak topics flagged: <strong>{summary.weakTopics}</strong>
+            </p>
+            <p>
+              Practice tries: <strong>{summary.practiceAttempts}</strong>
+            </p>
+            <button type="button" className="btn primary" onClick={() => goLearn(progress.lastMode || 'understand')}>
+              Continue learning
+            </button>
+          </section>
+
+          <section className="card">
+            <h2>Choose a section</h2>
+            <div className="home-tiles">
+              <button type="button" className="tile" onClick={() => goLearn('understand')}>
+                <span className="tile-title">Understand</span>
+                <span className="tile-desc">Simple explanations and quick checks</span>
+              </button>
+              <button type="button" className="tile" onClick={() => goLearn('practice')}>
+                <span className="tile-title">Practice</span>
+                <span className="tile-desc">Short answers and feedback</span>
+              </button>
+              <button type="button" className="tile" onClick={() => goLearn('remember')}>
+                <span className="tile-title">Remember</span>
+                <span className="tile-desc">Drills, ions, and revision</span>
               </button>
             </div>
-            <p className="small">
-              Question {Math.min(practiceIndex + 1, practiceQuestions.length)} of{' '}
-              {practiceQuestions.length}
-            </p>
+            <button type="button" className="btn muted" style={{ marginTop: 12 }} onClick={resetProgress}>
+              Reset progress
+            </button>
+          </section>
+        </div>
+      )}
+
+      {screen === 'learn' && mode === 'understand' && (
+        <div className="stack">
+          <p className="small step-label">
+            Concept {conceptIndex + 1} of {allConceptsInOrder.length}
+          </p>
+          <ConceptLesson concept={concept} />
+          <QuickCheck
+            key={concept.id}
+            quickCheck={concept.quickCheck}
+            onSubmit={handleQuickSubmit}
+            feedback={quickFeedback}
+          />
+          <div className="row">
+            <button type="button" className="btn muted" onClick={markDone}>
+              Mark concept done
+            </button>
+            <button type="button" className="btn primary" onClick={nextConcept}>
+              {conceptIndex < allConceptsInOrder.length - 1 ? 'Next concept' : 'Go to Practice'}
+            </button>
+          </div>
+          <button type="button" className="btn muted" onClick={() => setScreen('home')}>
+            Home
+          </button>
+        </div>
+      )}
+
+      {screen === 'learn' && mode === 'practice' && (
+        <div className="stack">
+          <div className="card row space-between">
+            <div>
+              <h2>Practice</h2>
+              <p className="small">
+                {currentQuestion
+                  ? `${practiceIndex + 1} / ${practiceQueue.length}`
+                  : practiceWeakOnly
+                    ? 'No weak-topic questions yet'
+                    : 'No questions'}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn muted"
+              onClick={() => {
+                setPracticeIndex(0)
+                setPracticeFeedback(null)
+                setPracticeWeakOnly((w) => !w)
+              }}
+            >
+              {practiceWeakOnly ? 'All questions' : 'Weak topics only'}
+            </button>
           </div>
 
-          {currentPracticeQuestion ? (
+          {currentQuestion ? (
             <>
               <PracticeQuestion
-                key={currentPracticeQuestion.id}
-                question={currentPracticeQuestion}
+                key={currentQuestion.id}
+                question={currentQuestion}
                 onSubmit={handlePracticeSubmit}
-                onDraftChange={handlePracticeDraftChange}
+                onDraftChange={() => practiceFeedback && setPracticeFeedback(null)}
+                feedbackVisible={Boolean(practiceFeedback)}
               />
               {practiceFeedback && (
                 <>
-                  <FeedbackPanel key={practiceFeedback.animationId} feedback={practiceFeedback} />
+                  <FeedbackPanel feedback={practiceFeedback} />
                   <RetryQuestion retryQuestion={practiceFeedback.retryQuestion} />
                   <div className="row">
                     <button
+                      type="button"
                       className="btn muted"
-                      onClick={moveToPreviousPractice}
                       disabled={practiceIndex === 0}
+                      onClick={() => {
+                        setPracticeFeedback(null)
+                        setPracticeIndex((i) => Math.max(0, i - 1))
+                      }}
                     >
-                      Previous Question
+                      Previous
                     </button>
-                    <button className="btn primary" onClick={moveToNextPractice}>
-                      Next Practice Question
+                    <button
+                      type="button"
+                      className="btn primary"
+                      onClick={() => {
+                        setPracticeFeedback(null)
+                        if (practiceIndex < practiceQueue.length - 1) {
+                          setPracticeIndex((i) => i + 1)
+                        } else {
+                          handleModeChange('remember')
+                        }
+                      }}
+                    >
+                      {practiceIndex < practiceQueue.length - 1 ? 'Next question' : 'Go to Remember'}
                     </button>
                   </div>
                 </>
@@ -277,34 +279,47 @@ function App() {
             </>
           ) : (
             <div className="card">
-              <p>
-                No mistake questions yet. Solve all questions once, then this mode can help you
-                revise weak spots.
-              </p>
-              <button className="btn primary" onClick={() => setPracticeMode('all')}>
-                Back to All Questions
+              <p>Practice more in “All questions” to build a weak-topic list, or complete checks in Understand.</p>
+              <button type="button" className="btn primary" onClick={() => setPracticeWeakOnly(false)}>
+                Show all questions
               </button>
             </div>
           )}
 
-          <button className="btn muted" onClick={() => setView('dashboard')}>
-            View Dashboard
+          <button type="button" className="btn muted" onClick={() => setScreen('home')}>
+            Home
           </button>
-        </section>
+        </div>
       )}
 
-      {view === 'dashboard' && (
-        <MasteryDashboard
-          mastery={mastery}
-          onPracticeWeakAreas={() => {
-            setPracticeMode('mistakes')
-            setPracticeIndex(0)
-            setPracticeFeedback(null)
-            setView('practice')
-          }}
-          onRestart={resetAllProgress}
-        />
+      {screen === 'learn' && mode === 'remember' && (
+        <div className="stack">
+          <MemoryDrill prompts={memoryData.rapidRecallPrompts} onRoundDone={memoryRoundDone} />
+          <section className="card">
+            <h3>Common ions</h3>
+            <p className="small">Tap a card to reveal the name.</p>
+            <div className="recall-grid">
+              {memoryData.commonIons.map((ion) => (
+                <RecallCard key={ion.symbol} item={ion} />
+              ))}
+            </div>
+          </section>
+          <RevisionMode valencyRows={memoryData.valencyRecall} pairs={memoryData.confusePronePairs} />
+          <WeakAreaDashboard
+            weakConceptIds={progress.weakConceptIds}
+            onPracticeWeak={() => {
+              setPracticeWeakOnly(true)
+              setPracticeIndex(0)
+              setPracticeFeedback(null)
+              handleModeChange('practice')
+            }}
+          />
+          <button type="button" className="btn muted" onClick={() => setScreen('home')}>
+            Home
+          </button>
+        </div>
       )}
+
     </div>
   )
 }
